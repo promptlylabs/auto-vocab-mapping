@@ -5,10 +5,12 @@ from configs.raw_data_sources import concept_vocab, hospital_folders
 
 class RawDataProcessor:
 
-    def __init__(self):
+    def __init__(self, vocab_file=concept_vocab, hospital_folders=hospital_folders):
 
-        self.concept_df = pd.read_csv(concept_vocab)[
-            ["concept_id", "concept_name"]]
+        concept_df = pd.read_csv(vocab_file, low_memory=False)
+        self.set_dtype = concept_df['concept_id'].dtype
+        self.target_dict = dict(
+            zip(concept_df['concept_id'], concept_df['concept_name']))
 
         self.hospitals_df = pd.DataFrame()
 
@@ -31,13 +33,12 @@ class RawDataProcessor:
     def join_source_target(self):
 
         self.hospitals_df = self.hospitals_df[[
-            "source_vocabulary_id", "source_code_description", "target_concept_id"]]
+            "source_code_description", "target_concept_id"]]
 
-        source_2_target = self.hospitals_df.merge(
-            self.concept_df, how='outer', left_on="target_concept_id", right_on="concept_id")
-
-        source_2_target.dropna(inplace=True)
-
+        source_2_target = self.hospitals_df.copy()
+        source_2_target.loc[:, 'concept_name'] = source_2_target['target_concept_id'].astype(
+            self.set_dtype).map(self.target_dict)
+        source_2_target.dropna(inplace=True, ignore_index=True)
         source_2_target.loc[source_2_target['concept_name']
                             != 'No matching concept', :]
 
