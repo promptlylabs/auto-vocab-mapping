@@ -1,15 +1,53 @@
 import faiss
 import numpy as np
+from scipy.spatial import KDTree
 
+def batch_compute_distances(feature_space: np.ndarray, 
+                            query: np.ndarray, 
+                            metric=faiss.METRIC_INNER_PRODUCT, 
+                            m:int=100, 
+                            k:int=10):
 
-def norml2_innerproduct(feature_space, query):
+    # Indexing setup
+    if metric == "HNSWFlat":
+        print("HNSWFlat")
+        index = faiss.IndexHNSWFlat(feature_space.shape[1], m)
+    else:
+        index = faiss.index_factory(feature_space.shape[1], "Flat", metric)
 
-    index = faiss.index_factory(
-        feature_space.shape[1], "Flat", faiss.METRIC_INNER_PRODUCT)
-    faiss.normalize_L2(feature_space)
+    # Metric specific tasks
+    if metric is faiss.METRIC_INNER_PRODUCT:
+        print("normalizing")
+        faiss.normalize_L2(feature_space)
+
     index.add(feature_space)
-    distance, index = index.search(np.array([query]), k=feature_space.shape[0])
+
+    # Query
+    if query.shape[0] == 1:
+        query = np.array([query])
+    distance, index = index.search(query, k=k)
 
     return distance, index
 
+def batch_compute_kd_trees(feature_space: np.ndarray, 
+                            query: np.ndarray, 
+                            k: int = 10):
+    
+    result = KDTree(feature_space, leafsize=80, copy_data=True) 
+    distance, index = result.query(query, k=k)
+    return distance, index
 
+
+def evaluate_index_matched_results(index: np.ndarray):
+    total = index.shape[0]
+    top1 = 0
+    top5 = 0
+    top10 = 0
+    for i, indeces in enumerate(index):
+        if i == indeces[0]:
+            top1 += 1
+        if i in indeces[:5]:
+            top5 += 1
+        if i in indeces:
+            top10 += 1
+    return {"top1": top1/total, "top5": top5/total, "top10": top10/total}
