@@ -2,10 +2,12 @@ import plotly.graph_objs as go
 
 def parallel(df, label='metric'):
     df = df.fillna(0)
-    df['dummy'] = df.reset_index().index
+    
     dimensions_dict = [dict(range = [min(df[cname]),max(df[cname])],
                     constraintrange = [min(df[cname]),max(df[cname])],
-                    label = cname, values = df[cname]) for cname in results_df.columns if cname != label]
+                    label = cname, values = df[cname]) for cname in df.columns if cname != label]
+    
+    df['dummy'] = df.reset_index().index
     dimensions_dict.append(dict(range=[df['dummy'].min(),df['dummy'].max()],
                        tickvals = df['dummy'], ticktext = df[label],
                        label=label, values=df['dummy']))
@@ -24,11 +26,15 @@ def parallel(df, label='metric'):
                     ), dimensions=dimensions))
     
     fig.update_layout(
+        title=f"{label} eval",
+        width=1200,
+        height=500,
         font=dict(
             family="Sans-serif",
-            size=13,
+            size=15,
             color="Black"
         )
     )
     
     fig.show()
+    fig.write_image(f"../lib/figures/{label}.png")
