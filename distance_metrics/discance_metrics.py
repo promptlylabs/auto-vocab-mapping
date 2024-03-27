@@ -12,7 +12,6 @@ def batch_compute_distances(
 
     # Indexing setup
     if metric == "HNSWFlat":
-        print("HNSWFlat")
         index = faiss.IndexHNSWFlat(feature_space.shape[1], 120)
         index.hnsw.efConstruction = 320
         index.hnsw.efSearch = 170
@@ -21,7 +20,6 @@ def batch_compute_distances(
 
     # Metric specific tasks
     if metric is faiss.METRIC_INNER_PRODUCT:
-        print("normalizing")
         faiss.normalize_L2(feature_space)
 
     # Build the index
